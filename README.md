@@ -35,35 +35,6 @@ Inspired by the traditional **ajo/esusu** savings culture: everyone contributes,
 
 ---
 
-## Project Structure
-
-```
-monipool/
-├── app/
-│   ├── layout.tsx              ← Root layout (fonts, providers)
-│   ├── page.tsx                ← Home / pool browser
-│   ├── login/page.tsx          ← Nostr login
-│   ├── dashboard/page.tsx      ← User dashboard
-│   ├── deposit/page.tsx        ← NGN deposit flow
-│   ├── create-pool/page.tsx    ← Pool creation
-│   ├── pool/[id]/page.tsx      ← Pool detail
-│   └── api/                    ← All Route Handlers (replaces Express)
-│       ├── auth/               ← challenge, verify, me
-│       ├── pools/              ← CRUD + join
-│       ├── deposits/           ← initiate + pending poll
-│       ├── withdrawals/        ← initiate payout
-│       ├── webhooks/bitnob/    ← Bitnob payment webhook
-│       └── cron/yield/         ← Daily yield accrual
-├── components/                 ← Reusable UI components
-├── lib/                        ← API clients + server utilities
-├── hooks/                      ← Client-side React hooks
-├── store/                      ← Zustand stores
-├── types/                      ← Shared TypeScript types
-├── prisma/                     ← Schema + seed data
-└── docs/                       ← Architecture + API + data model docs
-```
-
----
 
 ## Getting Started
 
