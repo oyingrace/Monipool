@@ -7,7 +7,7 @@
 
 MoniPool is a community savings platform that lets groups of Nigerians pool their naira together to collectively earn Bitcoin yield through the Lightning Network — without needing to understand any of the underlying technology.
 
-It is inspired by the traditional **ajo/esusu** savings culture: everyone contributes, everyone earns at the same time. The difference is that MoniPool puts the pooled funds to work as Lightning Network liquidity, earning real routing fees distributed proportionally back to every member.
+Inspired by the traditional **ajo/esusu** savings culture: everyone contributes, everyone earns at the same time. MoniPool puts pooled funds to work as Lightning Network liquidity, earning real routing fees distributed proportionally back to every member.
 
 ---
 
@@ -23,13 +23,45 @@ It is inspired by the traditional **ajo/esusu** savings culture: everyone contri
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + TypeScript + Tailwind CSS |
+| Framework | **Next.js 15** (App Router, TypeScript) |
+| Styling | Tailwind CSS v3 |
+| Client state | Zustand |
+| Database | PostgreSQL + Prisma ORM |
 | Fiat ↔ Bitcoin | Bitnob API (NGN deposits, BTC conversion, payouts) |
-| Lightning Wallet | Breez SDK (non-custodial wallets, invoices, stable balance) |
-| Yield Engine | Lightning Network + Amboss Magma (simulated for MVP) |
-| Identity + Community | Nostr (keypair login, group feeds, Nostr Wallet Connect) |
-| Backend | Node.js + Express + PostgreSQL |
-| Auth | Nostr keypair (passkey-based, no passwords) |
+| Lightning Wallet | Breez SDK (non-custodial, server-managed) |
+| Yield Engine | Lightning Network routing fees (simulated for MVP) |
+| Identity + Community | Nostr (keypair login, group feeds, NWC) |
+| Auth | Nostr keypair + JWT (httpOnly cookie) |
+
+---
+
+## Project Structure
+
+```
+monipool/
+├── app/
+│   ├── layout.tsx              ← Root layout (fonts, providers)
+│   ├── page.tsx                ← Home / pool browser
+│   ├── login/page.tsx          ← Nostr login
+│   ├── dashboard/page.tsx      ← User dashboard
+│   ├── deposit/page.tsx        ← NGN deposit flow
+│   ├── create-pool/page.tsx    ← Pool creation
+│   ├── pool/[id]/page.tsx      ← Pool detail
+│   └── api/                    ← All Route Handlers (replaces Express)
+│       ├── auth/               ← challenge, verify, me
+│       ├── pools/              ← CRUD + join
+│       ├── deposits/           ← initiate + pending poll
+│       ├── withdrawals/        ← initiate payout
+│       ├── webhooks/bitnob/    ← Bitnob payment webhook
+│       └── cron/yield/         ← Daily yield accrual
+├── components/                 ← Reusable UI components
+├── lib/                        ← API clients + server utilities
+├── hooks/                      ← Client-side React hooks
+├── store/                      ← Zustand stores
+├── types/                      ← Shared TypeScript types
+├── prisma/                     ← Schema + seed data
+└── docs/                       ← Architecture + API + data model docs
+```
 
 ---
 
@@ -40,55 +72,76 @@ It is inspired by the traditional **ajo/esusu** savings culture: everyone contri
 - PostgreSQL 14+
 - Bitnob sandbox API key → https://bitnob.com/developers
 - Breez SDK API key → https://sdk.breez.technology
-- Nostr keypair (generated automatically on first run)
+- Nostr service keypair (auto-generate, see below)
 
 ### Installation
 
 ```bash
-git clone https://github.com/oyingrace/monipool
+git clone https://github.com/yourteam/monipool
 cd monipool
 npm install
-cp .env.example .env
-# Fill in your API keys in .env
+cp .env.example .env.local
+# Fill in your API keys in .env.local
+npx prisma migrate dev --name init
+npx prisma db seed
 npm run dev
 ```
 
-### Environment Variables
+Open http://localhost:3000
+
+### Generate a Nostr service keypair (run once)
+
+```bash
+node -e "
+const { generateSecretKey, getPublicKey } = require('nostr-tools');
+const priv = generateSecretKey();
+const pub = getPublicKey(priv);
+console.log('NOSTR_SERVICE_PRIVKEY=' + Buffer.from(priv).toString('hex'));
+console.log('NOSTR_SERVICE_PUBKEY=' + pub);
+"
+```
+
+Paste both values into `.env.local`.
+
+---
+
+## Environment Variables
 
 ```env
-# Bitnob
-BITNOB_API_KEY=your_sandbox_key
-BITNOB_WEBHOOK_SECRET=your_webhook_secret
+# Bitnob (sandbox)
+BITNOB_API_KEY=
+BITNOB_WEBHOOK_SECRET=
 BITNOB_BASE_URL=https://sandboxapi.bitnob.co/api/v1
 
-# Breez SDK
-BREEZ_API_KEY=your_breez_key
+# Breez SDK (testnet)
+BREEZ_API_KEY=
 BREEZ_NETWORK=testnet
 
-# Nostr
-NOSTR_RELAY_URL=wss://relay.nostr.com
+# Nostr (generate with command above)
+NOSTR_SERVICE_PRIVKEY=
+NOSTR_SERVICE_PUBKEY=
 
 # Database
 DATABASE_URL=postgresql://localhost:5432/monipool
 
+# Auth
+JWT_SECRET=
+CRON_SECRET=
+
 # App
-PORT=3001
-FRONTEND_URL=http://localhost:3000
-JWT_SECRET=your_jwt_secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ---
 
 ## MVP Scope (Hackathon)
 
-The following 6 features constitute the full MVP:
-
-1. **NGN Deposit Flow** — bank transfer → Bitnob → BTC/sats credited to wallet
-2. **Breez SDK Wallet** — each user gets a non-custodial Lightning wallet, no seed phrase
-3. **Pool Creation + Joining** — browse pools, join with minimum deposit, see members
-4. **Yield Dashboard** — simulated routing fee earnings shown per pool and per user
-5. **Nostr Login** — passkey-based login using Nostr keypair, no email/password
-6. **Nostr Pool Feed** — live activity feed per pool using Nostr events
+1. **NGN Deposit Flow** — bank transfer → Bitnob → balance credited
+2. **Breez Wallet** — non-custodial Lightning wallet per user (server-managed)
+3. **Pool Creation + Joining** — browse pools, join with minimum deposit
+4. **Yield Dashboard** — simulated routing fee earnings per pool and per user
+5. **Nostr Login** — passkey + PIN login, no email/password
+6. **Nostr Pool Feed** — live activity feed per pool
 
 ---
 
@@ -98,10 +151,19 @@ The following 6 features constitute the full MVP:
 - Breez SDK Docs: https://sdk.breez.technology/guide
 - Nostr Protocol: https://nostr.com
 - Amboss Magma: https://amboss.space/magma
-- Lightning Pool (reference): https://github.com/lightninglabs/pool
+- Next.js 15 Docs: https://nextjs.org/docs
 
 ---
 
-## Team
+## Cursor AI Instructions
 
-Built with love for Hack4Freedom
+Before writing any code, Cursor should read these files in order:
+1. `SKILL.md` — master build guide
+2. `PLAN.md` — phase-by-phase build plan
+3. `docs/ARCHITECTURE.md` — system design
+4. `docs/DATA_MODELS.md` — database schema
+5. `docs/API_REFERENCE.md` — third-party integrations
+
+---
+
+*Built with love for hack4Freedom*

@@ -5,7 +5,7 @@ description: >
   for Nigerian users. Use this skill for every code generation, component creation,
   API integration, and architecture decision in this project. Always read this file
   before writing any code, creating any file, or making any architectural decision.
-  This skill covers: React frontend, Node.js backend, Bitnob API (NGN fiat onramp),
+  This skill covers: Next.js 15 App Router, Bitnob API (NGN fiat onramp),
   Breez SDK (Lightning wallets), Nostr (identity + community), pool logic, and
   yield simulation. Trigger this whenever working on any part of MoniPool.
 ---
@@ -35,7 +35,7 @@ Read this entire file before writing a single line of code.
 4. **All money amounts displayed in ₦ naira first**, with BTC equivalent in small grey text underneath.
 5. **Yield figures must always include a disclaimer**: "Estimated. Not guaranteed."
 6. **Never store private keys on the backend.** Wallets are non-custodial via Breez SDK.
-7. **Pool state must be real-time.** Use polling or WebSockets for pool membership and yield updates.
+7. **Pool state must be real-time.** Use polling for pool membership and yield updates.
 
 ---
 
@@ -43,18 +43,28 @@ Read this entire file before writing a single line of code.
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend framework | React 18 + TypeScript | Vite for bundling |
-| Styling | Tailwind CSS | No component libraries unless specified |
-| State management | Zustand | Lightweight, no Redux |
-| Backend | Node.js + Express | TypeScript |
-| Database | PostgreSQL + Prisma ORM | |
+| Framework | **Next.js 15** (App Router) | Single project — no separate backend |
+| Language | TypeScript (strict mode) | Everywhere, no exceptions |
+| Styling | Tailwind CSS v3 | No component libraries unless specified |
+| State management | Zustand | Client-side only, lightweight |
+| Database ORM | Prisma + PostgreSQL | |
+| API layer | Next.js Route Handlers | `/app/api/...` replaces Express |
 | Fiat onramp | Bitnob API | Sandbox keys for MVP |
-| Lightning wallets | Breez SDK (JS) | Non-custodial |
-| Identity + community | Nostr (nostr-tools library) | |
+| Lightning wallets | Breez SDK | Managed server-side |
+| Identity + community | Nostr (nostr-tools) | |
 | Yield engine | Simulated (MVP) | Real Amboss Magma post-hackathon |
-| Auth | Nostr keypair + JWT session | No email/password |
+| Auth | Nostr keypair + JWT (via cookies) | No email/password |
+| Cron jobs | Vercel Cron / node-cron | Daily yield accrual |
 
 Do not introduce other libraries without a clear reason. Keep dependencies minimal.
+
+**Critical Next.js 15 rules:**
+- Use the **App Router** (`/app` directory) — NOT the Pages Router
+- Server Components by default — only add `'use client'` when genuinely needed (event handlers, browser APIs, Zustand)
+- Route Handlers live at `app/api/[route]/route.ts` and export named functions: `GET`, `POST`, `PUT`, `DELETE`
+- Use `next/navigation` for routing (`useRouter`, `redirect`, `notFound`) — NOT `next/router`
+- Use `cookies()` from `next/headers` for server-side cookie access
+- Fetch is native — no need for axios on the server side
 
 ---
 
@@ -62,61 +72,73 @@ Do not introduce other libraries without a clear reason. Keep dependencies minim
 
 ```
 monipool/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ui/            ← Primitives: Button, Input, Card, Badge, Modal
-│   │   │   ├── pool/          ← PoolCard, PoolList, PoolDetail, JoinPoolModal
-│   │   │   ├── wallet/        ← WalletBalance, DepositFlow, WithdrawFlow
-│   │   │   ├── feed/          ← NostrFeed, FeedItem, ActivityBadge
-│   │   │   └── layout/        ← Navbar, Sidebar, PageWrapper
-│   │   ├── pages/
-│   │   │   ├── Home.tsx       ← Landing / pool browser
-│   │   │   ├── Pool.tsx       ← Single pool detail
-│   │   │   ├── Dashboard.tsx  ← User dashboard (wallet + earnings)
-│   │   │   ├── Deposit.tsx    ← NGN deposit flow
-│   │   │   ├── Login.tsx      ← Nostr login
-│   │   │   └── CreatePool.tsx ← Pool creation form
-│   │   ├── hooks/
-│   │   │   ├── usePool.ts
-│   │   │   ├── useWallet.ts
-│   │   │   ├── useNostr.ts
-│   │   │   └── useDeposit.ts
-│   │   ├── lib/
-│   │   │   ├── bitnob.ts      ← Bitnob API client
-│   │   │   ├── breez.ts       ← Breez SDK wrapper
-│   │   │   ├── nostr.ts       ← Nostr client (nostr-tools)
-│   │   │   └── api.ts         ← Internal backend API client
-│   │   ├── store/
-│   │   │   ├── userStore.ts   ← Auth + wallet state
-│   │   │   └── poolStore.ts   ← Pool list + active pool state
-│   │   └── types/
-│   │       └── index.ts       ← All shared TypeScript types
-│   └── index.html
-├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   │   ├── pools.ts
-│   │   │   ├── users.ts
-│   │   │   ├── deposits.ts
-│   │   │   └── webhooks.ts    ← Bitnob webhook handler
-│   │   ├── services/
-│   │   │   ├── poolService.ts
-│   │   │   ├── yieldService.ts ← Yield simulation logic
-│   │   │   ├── bitnobService.ts
-│   │   │   └── nostrService.ts
-│   │   ├── middleware/
-│   │   │   ├── auth.ts        ← JWT verification
-│   │   │   └── validate.ts    ← Zod request validation
-│   │   └── prisma/
-│   │       └── schema.prisma
-│   └── server.ts
+├── app/
+│   ├── layout.tsx              ← Root layout (fonts, providers)
+│   ├── page.tsx                ← Home / pool browser (Server Component)
+│   ├── login/
+│   │   └── page.tsx            ← Nostr login page
+│   ├── dashboard/
+│   │   └── page.tsx            ← User dashboard
+│   ├── deposit/
+│   │   └── page.tsx            ← NGN deposit flow
+│   ├── create-pool/
+│   │   └── page.tsx            ← Pool creation form
+│   ├── pool/
+│   │   └── [id]/
+│   │       └── page.tsx        ← Pool detail page
+│   └── api/
+│       ├── auth/
+│       │   ├── challenge/route.ts
+│       │   ├── verify/route.ts
+│       │   └── me/route.ts
+│       ├── pools/
+│       │   ├── route.ts           ← GET (list), POST (create)
+│       │   └── [id]/
+│       │       ├── route.ts       ← GET (detail)
+│       │       └── join/route.ts  ← POST (join)
+│       ├── deposits/
+│       │   ├── route.ts           ← POST (initiate)
+│       │   └── pending/route.ts   ← GET (poll)
+│       ├── withdrawals/
+│       │   └── route.ts           ← POST (initiate)
+│       └── webhooks/
+│           └── bitnob/route.ts    ← POST (Bitnob webhook)
+├── components/
+│   ├── ui/                     ← Button, Input, Card, Badge, Modal, Toast
+│   ├── pool/                   ← PoolCard, PoolList, PoolDetail, JoinPoolModal
+│   ├── wallet/                 ← WalletBalance, DepositFlow, WithdrawFlow
+│   ├── feed/                   ← NostrFeed, FeedItem
+│   └── layout/                 ← Navbar, PageWrapper
+├── lib/
+│   ├── bitnob.ts               ← Bitnob API client (server-side)
+│   ├── breez.ts                ← Breez SDK wrapper (server-side)
+│   ├── nostr.ts                ← Nostr client (browser + server)
+│   ├── prisma.ts               ← Prisma client singleton
+│   ├── auth.ts                 ← JWT helpers
+│   └── yield.ts                ← Yield calculation logic
+├── hooks/
+│   ├── usePool.ts              ← Client-side pool data fetching
+│   ├── useWallet.ts            ← Client-side wallet state
+│   ├── useNostr.ts             ← Nostr relay subscription
+│   └── useDeposit.ts           ← Deposit polling logic
+├── store/
+│   ├── userStore.ts            ← Auth + wallet Zustand store
+│   └── poolStore.ts            ← Pool list Zustand store
+├── types/
+│   └── index.ts                ← All shared TypeScript interfaces
+├── prisma/
+│   ├── schema.prisma
+│   └── seed.ts
 ├── docs/
 │   ├── API_REFERENCE.md
 │   ├── DATA_MODELS.md
 │   └── ARCHITECTURE.md
+├── .env.local                  ← Local env vars (never commit)
 ├── .env.example
 ├── .cursorrules
+├── next.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
 ├── PLAN.md
 ├── SKILL.md
 └── README.md
@@ -129,11 +151,11 @@ monipool/
 Reference `docs/DATA_MODELS.md` for full Prisma schema.
 
 Key entities:
-- **User** — nostrPubKey, displayName, walletId (Breez), createdAt
+- **User** — nostrPubKey, displayName, walletId (Breez), balanceSats, createdAt
 - **Pool** — id, name, tier, minDeposit, lockDays, targetSize, currentSize, status, creatorId, nostrGroupId
-- **PoolMember** — userId, poolId, depositAmount, sharePercent, joinedAt
+- **PoolMember** — userId, poolId, depositNGN, depositSats, sharePercent, earnedYieldNGN, joinedAt
 - **Deposit** — userId, amountNGN, amountSats, bitnobReference, status, createdAt
-- **YieldRecord** — poolId, periodStart, periodEnd, totalFeesEarned, distributedAt
+- **YieldRecord** — poolId, periodDate, totalYieldNGN, distributedAt
 
 ---
 
@@ -141,24 +163,24 @@ Key entities:
 
 ### 6.1 Bitnob (NGN → BTC)
 - Read `docs/API_REFERENCE.md#bitnob` before writing any Bitnob code
+- All Bitnob calls happen in Route Handlers only — never in Client Components
 - Use sandbox URL: `https://sandboxapi.bitnob.co/api/v1`
-- Key endpoints: `POST /wallets` (create wallet), `POST /transactions/initiatepayment` (deposit), webhooks for confirmation
-- Always verify webhook signatures
+- Always verify webhook signatures in `app/api/webhooks/bitnob/route.ts`
 - Display Bitnob transaction reference to user for support purposes
 
 ### 6.2 Breez SDK
 - Read `docs/API_REFERENCE.md#breez` before writing any Breez code
-- Initialize SDK once at app startup
-- Use passkey backup — never prompt for seed phrase
-- Wrap all Breez calls in try/catch with user-friendly error messages
-- For MVP: use testnet
+- Breez SDK runs server-side only (in Route Handlers and lib/breez.ts)
+- Initialize once as a singleton in `lib/breez.ts`
+- Use testnet for MVP
+- Wrap all calls in try/catch with user-friendly error messages
 
 ### 6.3 Nostr
 - Read `docs/API_REFERENCE.md#nostr` before writing any Nostr code
 - Use `nostr-tools` library
-- On first login: generate keypair, store privkey encrypted in localStorage
-- Pool groups are Nostr Kind 34550 (community) events
-- Pool activity posts are Kind 1 (text note) events signed by the pool's service key
+- Keypair generation and encryption happen client-side (browser)
+- Relay subscriptions (NostrFeed) are Client Components with `'use client'`
+- Server-side Nostr posting (pool activity) happens in Route Handlers via `lib/nostr.ts`
 - Use relay: `wss://relay.damus.io` as primary, `wss://nos.lol` as fallback
 
 ---
@@ -174,11 +196,11 @@ COMPLETED: Lock period ended. Yield distributed. Members can withdraw.
 CANCELLED: Pool didn't fill within 7 days. Deposits refunded.
 
 Yield simulation (MVP):
-- STARTER pool: 0.014% per day (≈5% APY)
-- GROWTH pool:  0.023% per day (≈8.5% APY)  
-- POWER pool:   0.036% per day (≈13% APY)
-- Yield accrues daily at midnight UTC
-- Each member's earned yield = (memberDeposit / totalPoolSize) × dailyYield
+- STARTER pool: 0.000137 per day (≈5% APY)
+- GROWTH pool:  0.000233 per day (≈8.5% APY)
+- POWER pool:   0.000356 per day (≈13% APY)
+- Yield accrues daily at midnight UTC via cron job
+- Each member's earned yield = (memberDeposit / totalPoolSize) × dailyPoolYield
 
 Pool tiers:
 - STARTER: min ₦10,000 / target ₦500,000 / 30 days
@@ -190,14 +212,15 @@ Pool tiers:
 
 ## 8. UI/UX Rules
 
-- **Colour palette**: Deep green (#0D7A5F) primary, amber (#F59E0B) accent, white/grey backgrounds
-- **Font**: Inter (Google Fonts)
+- **Colour palette**: Deep green (`#0D7A5F`) primary, amber (`#F59E0B`) accent, `#F9FAFB` background
+- **Font**: Inter — add via `next/font/google` in `app/layout.tsx`
 - **Mobile-first**: All layouts must work on 375px width
-- **Loading states**: Every async action needs a spinner or skeleton
+- **Loading states**: Use Next.js `loading.tsx` files + Suspense boundaries + skeleton components
 - **Empty states**: Every list needs an empty state with a CTA
-- **Naira formatting**: Always use `₦` symbol and comma separators: `₦10,000`
-- **Dates**: Display in Nigerian format — `23 May 2026`
-- **Pool cards** must show: name, tier badge, progress bar (current/target), APY range, lock period, member count
+- **Naira formatting**: Always `₦` symbol with comma separators: `₦10,000`
+- **Dates**: Nigerian format — `23 May 2026`
+- **Pool cards** must show: name, tier badge, progress bar, APY range, lock period, member count
+- **Server Components render the shell** — Client Components handle interactivity only
 
 ---
 
@@ -206,15 +229,19 @@ Pool tiers:
 ```
 User visits site
   → Click "Sign In with Nostr"
-  → Check localStorage for existing keypair
-  → If none: generate new keypair, save encrypted privkey to localStorage
-  → Sign a challenge from the backend with the privkey
-  → Backend verifies signature, issues JWT
-  → JWT stored in memory (not localStorage) for session
-  → On refresh: re-sign challenge with stored keypair
+  → Check localStorage for existing encrypted keypair
+  → If none: generate new keypair, show 4-digit PIN modal, encrypt + save to localStorage
+  → If existing: show PIN entry modal, decrypt keypair
+  → POST /api/auth/challenge → get challenge string
+  → Sign challenge with Nostr privkey → get signed event
+  → POST /api/auth/verify { pubkey, signedEvent }
+  → Backend verifies signature, upserts User, returns JWT
+  → JWT stored in httpOnly cookie (set by server)
+  → Subsequent requests authenticated via cookie
+  → On page refresh: cookie persists, no re-login needed
 ```
 
-Never store the raw private key unencrypted. Use a simple passphrase-based encryption (AES-GCM with WebCrypto API) derived from a user-chosen PIN.
+Use `httpOnly` cookies for JWT — NOT localStorage. Set via `cookies().set()` in the Route Handler response.
 
 ---
 
@@ -222,56 +249,125 @@ Never store the raw private key unencrypted. Use a simple passphrase-based encry
 
 ```
 User clicks "Add Money"
-  → Enter NGN amount
-  → Backend calls Bitnob to generate a bank account number (virtual account)
-  → Display: bank name, account number, amount to transfer
-  → User transfers from their bank app
-  → Bitnob webhook fires on confirmation → backend credits user's sats balance
-  → UI updates in real time (poll /api/deposits/pending every 5s)
-  → Show success screen with sats credited and NGN equivalent
+  → Enter NGN amount (min ₦1,000)
+  → POST /api/deposits → Bitnob generates virtual NGN bank account
+  → Display: bank name, account number, amount, 15-min countdown
+  → User transfers from their bank app (outside MoniPool)
+  → Bitnob sends webhook → POST /api/webhooks/bitnob
+  → Backend verifies, credits user balance, updates Deposit status
+  → Frontend polls GET /api/deposits/pending every 5s
+  → Poll returns CONFIRMED → show success screen
 ```
 
 ---
 
-## 11. Error Handling Standards
+## 11. Next.js 15 Specific Patterns
 
-Every API call must follow this pattern:
-
+### Route Handler pattern:
 ```typescript
-try {
-  const result = await someApiCall()
-  // handle success
-} catch (error) {
-  if (error instanceof BitnobError) {
-    showToast('Payment service unavailable. Please try again.', 'error')
-  } else if (error instanceof BreezError) {
-    showToast('Wallet error. Your funds are safe.', 'error')
-  } else {
-    showToast('Something went wrong. Please try again.', 'error')
-    console.error('[MoniPool Error]', error)
+// app/api/pools/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { verifyAuth } from '@/lib/auth'
+
+export async function GET(request: NextRequest) {
+  try {
+    const pools = await prisma.pool.findMany({ where: { status: 'OPEN' } })
+    return NextResponse.json({ data: pools })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch pools' }, { status: 500 })
   }
+}
+
+export async function POST(request: NextRequest) {
+  const user = await verifyAuth(request) // reads httpOnly cookie
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const body = await request.json()
+  // ... create pool
 }
 ```
 
-Never expose raw API error messages to the user.
+### Server Component data fetching:
+```typescript
+// app/page.tsx — Server Component, no 'use client'
+import { prisma } from '@/lib/prisma'
+import { PoolList } from '@/components/pool/PoolList'
+
+export default async function HomePage() {
+  const pools = await prisma.pool.findMany({ where: { status: 'OPEN' } })
+  return <PoolList initialPools={pools} />
+}
+```
+
+### Client Component pattern:
+```typescript
+// components/pool/JoinPoolModal.tsx
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export function JoinPoolModal({ poolId }: { poolId: string }) {
+  const router = useRouter()
+  // ... interactive logic
+}
+```
+
+### Prisma singleton (prevents connection exhaustion in dev):
+```typescript
+// lib/prisma.ts
+import { PrismaClient } from '@prisma/client'
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+```
 
 ---
 
-## 12. What NOT to Build (MVP Scope)
+## 12. Error Handling Standards
+
+Route Handlers:
+```typescript
+try {
+  // operation
+  return NextResponse.json({ data: result })
+} catch (error) {
+  console.error('[MoniPool Error]', error)
+  return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+}
+```
+
+Client Components:
+```typescript
+try {
+  const res = await fetch('/api/pools', { method: 'POST', body: JSON.stringify(data) })
+  if (!res.ok) throw new Error(await res.text())
+  // handle success
+} catch {
+  showToast('Something went wrong. Please try again.', 'error')
+}
+```
+
+Never expose raw API or database error messages to the user.
+
+---
+
+## 13. What NOT to Build (MVP Scope)
 
 - ❌ Real Amboss Magma integration (simulate yield instead)
-- ❌ In-app chat (Nostr feed is read-only for MVP)
+- ❌ In-app chat (Nostr feed is read-only)
 - ❌ Reputation/vouching system
 - ❌ Mobile app (web only)
 - ❌ Multiple currencies (NGN only)
 - ❌ Admin dashboard
-- ❌ Email notifications
+- ❌ Email/SMS notifications
+- ❌ Pages Router (App Router only)
 
 These are post-hackathon features. Do not build them now.
 
 ---
 
-## 13. Reference Files
+## 14. Reference Files
 
 Before working on specific areas, read the relevant doc:
 
