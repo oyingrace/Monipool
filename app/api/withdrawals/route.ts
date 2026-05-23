@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { initiateNGNPayout } from '@/lib/bitnob'
+import {
+  initiateNGNPayout,
+  createBitnobLightningInvoice,
+  isBitnobConfigured,
+} from '@/lib/bitnob'
 import { isBreezReady, payLightningInvoice } from '@/lib/breez'
 import { ngnToSats } from '@/lib/utils'
 import { z } from 'zod'
@@ -11,7 +15,6 @@ const WithdrawSchema = z.object({
   amountNGN: z.number().int().min(1000, 'Minimum withdrawal is ₦1,000'),
   bankAccount: z.string().length(10, 'Account number must be 10 digits'),
   bankCode: z.string().min(1),
-  // Optional: if user provides a Lightning invoice we pay it directly from Breez
   lightningInvoice: z.string().optional(),
 })
 
@@ -41,8 +44,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const reference = `mp_wdl_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
     let breezTxId: string | null = null
+    let finalStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' = 'PENDING'
 
-    // Route 1: User provided a Lightning invoice — pay directly from Breez wallet
+    // ── Route A: User-provided Lightning invoice ─────────────────────────────
     if (lightningInvoice) {
       const breezReady = await isBreezReady()
       if (!breezReady) {
@@ -51,34 +55,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           { status: 503 }
         )
       }
+      const result = await payLightningInvoice(lightningInvoice)
+      breezTxId = result.txId
+      finalStatus = 'COMPLETED'
+
+    // ── Route B: Bank withdrawal via Breez → Bitnob Lightning → NGN bank ─────
+    } else if (isBitnobConfigured() && await isBreezReady()) {
       try {
-        const result = await payLightningInvoice(lightningInvoice)
-        breezTxId = result.txId
-      } catch {
-        return NextResponse.json(
-          { error: 'Lightning payment failed. Please try bank withdrawal.' },
-          { status: 500 }
+        // Step 1: Create a Bitnob Lightning invoice for this NGN amount.
+        // When paid, Bitnob converts the incoming BTC to NGN and sends to bank.
+        const bitnobInvoice = await createBitnobLightningInvoice(
+          amountNGN,
+          user.nostrPubKey, // used as customerEmail fallback — replace with real email post-demo
+          reference
         )
-      }
-    } else {
-      // Route 2: Standard bank withdrawal via Bitnob NGN payout
-      // The Breez wallet sends BTC to Bitnob, Bitnob sends NGN to bank.
-      // HACKATHON: Bitnob ↔ Breez bridge is simulated — Bitnob payout
-      // initiated directly. Post-demo: generate Bitnob Lightning invoice,
-      // pay it from Breez, then Bitnob auto-converts to NGN and pays bank.
-      const breezReady = await isBreezReady()
-      if (breezReady) {
-        console.log(`[MoniPool] Breez: withdrawing ${requiredSats} sats for user ${auth.userId}`)
-        // TODO: post-demo — pay Bitnob Lightning invoice from Breez wallet
-        // const bitnobInvoice = await getBitnobLightningInvoice(amountNGN, reference)
-        // await payLightningInvoice(bitnobInvoice)
+
+        // Step 2: Pay the Bitnob invoice from the Breez pool wallet.
+        // BTC leaves the pool wallet; Bitnob sends NGN to the user's bank.
+        const result = await payLightningInvoice(bitnobInvoice.invoice)
+        breezTxId = result.txId
+        finalStatus = 'PROCESSING'
+        console.log(`[MoniPool] Breez paid Bitnob invoice ${reference} — NGN payout in progress`)
+      } catch (bridgeErr) {
+        // Bridge failed — fall back to direct Bitnob NGN payout
+        console.error('[MoniPool Error] Breez → Bitnob bridge failed, falling back to direct payout:', bridgeErr)
+        await initiateNGNPayout(bankAccount, bankCode, amountNGN, reference)
+        finalStatus = 'PENDING'
       }
 
+    // ── Route C: Direct Bitnob NGN payout (fallback) ──────────────────────────
+    } else {
       try {
         await initiateNGNPayout(bankAccount, bankCode, amountNGN, reference)
-      } catch {
-        // HACKATHON: Bitnob sandbox fallback — proceed for demo
-        console.warn('[MoniPool] Bitnob payout failed — demo mode, recording withdrawal anyway')
+        finalStatus = 'PENDING'
+      } catch (payoutErr) {
+        console.error('[MoniPool Error] Bitnob payout failed:', payoutErr)
+        // Still record the withdrawal — support team can process manually
+        finalStatus = 'PENDING'
       }
     }
 
@@ -95,7 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           bankAccount: lightningInvoice ? 'lightning' : bankAccount,
           bankCode: lightningInvoice ? 'ln' : bankCode,
           bitnobReference: breezTxId ?? reference,
-          status: breezTxId ? 'COMPLETED' : 'PENDING',
+          status: finalStatus,
         },
       })
     })

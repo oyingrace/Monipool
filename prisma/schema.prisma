@@ -136,3 +136,12 @@ enum WithdrawalStatus {
   COMPLETED
   FAILED
 }
+
+model AuthChallenge {
+  id        String   @id @default(cuid())
+  challenge String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@map("auth_challenges")
+}

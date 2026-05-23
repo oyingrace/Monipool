@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyEvent } from 'nostr-tools'
 import { prisma } from '@/lib/prisma'
 import { signJWT } from '@/lib/auth'
-import { challenges } from '@/lib/challengeStore'
+import { consumeChallenge } from '@/lib/challengeStore'
+import { satsToNGN } from '@/lib/utils'
 import { z } from 'zod'
 
 const VerifySchema = z.object({
@@ -20,18 +21,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { pubkey, signedEvent, challengeId } = parsed.data
-    const stored = challenges.get(challengeId)
 
-    if (!stored || Date.now() > stored.expires) {
+    // Consume the challenge — single-use, deleted from DB immediately
+    const challenge = await consumeChallenge(challengeId)
+    if (!challenge) {
       return NextResponse.json({ error: 'Challenge expired. Please try again.' }, { status: 401 })
     }
 
+    // Verify the Nostr event signature
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!verifyEvent(signedEvent as any)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    challenges.delete(challengeId)
+    // Ensure the signed challenge matches what we issued
+    const signedChallenge = (signedEvent.tags as string[][])
+      ?.find((t) => t[0] === 'challenge')?.[1]
+    if (signedChallenge !== challenge) {
+      return NextResponse.json({ error: 'Challenge mismatch' }, { status: 401 })
+    }
 
     const user = await prisma.user.upsert({
       where: { nostrPubKey: pubkey },
@@ -41,7 +49,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const jwt = await signJWT({ userId: user.id, pubkey })
 
-    const response = NextResponse.json({ data: user })
+    const response = NextResponse.json({
+      data: { ...user, balanceNGN: satsToNGN(user.balanceSats) },
+    })
     response.cookies.set('monipool_token', jwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
