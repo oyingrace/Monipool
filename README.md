@@ -1,5 +1,5 @@
 # MoniPool 🌊⚡
-### Community Bitcoin Yield Pools — Bitcoin yield. Naira simplicity. Community power.
+### Let your Naira work for you.
 
 ---
 
