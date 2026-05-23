@@ -5,28 +5,28 @@
 
 # PART 1: HIGH-LEVEL PLAN
 
-## Phase 0 — Foundation (Day 1 Morning)
+## Phase 0 — Foundation 
 Scaffold a single Next.js 16 project with App Router, Tailwind, Prisma, and all environment config. One repo, one `npm run dev`, everything in one place.
 
-## Phase 1 — Auth + Identity (Day 1 Morning)
+## Phase 1 — Auth + Identity 
 The entire app gates behind login. Build Nostr keypair generation (client), the auth Route Handlers (server), httpOnly cookie session, and middleware-based route protection.
 
-## Phase 2 — Wallet + Deposit (Day 1 Afternoon)
+## Phase 2 — Wallet + Deposit 
 The core value proposition requires money to move. Build the Bitnob NGN deposit Route Handler, virtual account UI, webhook receiver, and wallet balance display.
 
-## Phase 3 — Pool System (Day 1 Afternoon / Evening)
+## Phase 3 — Pool System 
 The product's heart. Build pool creation, browsing (Server Component), joining, and the yield simulation cron job.
 
-## Phase 4 — Nostr Community Layer (Day 2 Morning)
+## Phase 4 — Nostr Community Layer 
 The differentiator. Attach a Nostr group to each pool, post activity events from Route Handlers, and display the live feed in a Client Component.
 
-## Phase 5 — Dashboard + Withdrawal (Day 2 Morning)
+## Phase 5 — Dashboard + Withdrawal 
 Close the loop. Users see their earnings and withdraw back to naira. Build the dashboard (Server Component) and withdrawal Route Handler.
 
-## Phase 6 — Polish + Demo Prep (Day 2 Afternoon)
+## Phase 6 — Polish + Demo Prep 
 Fix mobile layouts, add loading.tsx files, seed demo data, and rehearse the demo flow.
 
-## Phase 7 — Breez SDK Liquid (Completed)
+## Phase 7 — Breez SDK Liquid 
 Wire the real Lightning wallet layer. A single custodial pool wallet (Breez SDK Liquid) receives
 BTC from confirmed Bitnob deposits and pays out on withdrawal. Per-user balances remain tracked
 in PostgreSQL as shares of the pool. The Bitnob ↔ Breez payment bridge is scaffolded with clear
