@@ -1,4 +1,4 @@
-# MoniPool 🌊⚡
+# MoniPool 
 ### Let your Naira work for you.
 
 ---
