@@ -6,7 +6,7 @@
 # PART 1: HIGH-LEVEL PLAN
 
 ## Phase 0 — Foundation (Day 1 Morning)
-Scaffold a single Next.js 15 project with App Router, Tailwind, Prisma, and all environment config. One repo, one `npm run dev`, everything in one place.
+Scaffold a single Next.js 16 project with App Router, Tailwind, Prisma, and all environment config. One repo, one `npm run dev`, everything in one place.
 
 ## Phase 1 — Auth + Identity (Day 1 Morning)
 The entire app gates behind login. Build Nostr keypair generation (client), the auth Route Handlers (server), httpOnly cookie session, and middleware-based route protection.
