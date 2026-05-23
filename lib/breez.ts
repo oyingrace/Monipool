@@ -9,20 +9,20 @@
  * Breez's connectWithSigner() + user-held keys.
  */
 
-import {
-  connect,
-  defaultConfig,
-  type BindingLiquidSdk,
-  type LiquidNetwork,
-  type LightningPaymentLimitsResponse,
-} from '@breeztech/breez-sdk-liquid'
 import path from 'path'
+import type {
+  BindingLiquidSdk,
+  LiquidNetwork,
+  LightningPaymentLimitsResponse,
+} from '@breeztech/breez-sdk-liquid'
 
 let sdk: BindingLiquidSdk | null = null
 let initPromise: Promise<BindingLiquidSdk> | null = null
 
 async function initSdk(): Promise<BindingLiquidSdk> {
   if (sdk) return sdk
+
+  const { connect, defaultConfig } = await import('@breeztech/breez-sdk-liquid')
 
   const mnemonic = process.env.BREEZ_MNEMONIC
   const apiKey = process.env.BREEZ_API_KEY ?? undefined

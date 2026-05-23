@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createChallenge, purgeExpiredChallenges } from '@/lib/challengeStore'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(): Promise<NextResponse> {
   // Occasionally purge stale rows — cheap, fire-and-forget
   purgeExpiredChallenges().catch(() => null)
