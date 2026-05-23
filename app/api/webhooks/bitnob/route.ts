@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyWebhookSignature } from '@/lib/bitnob'
+import { createDepositInvoice, isBreezReady } from '@/lib/breez'
 import { ngnToSats } from '@/lib/utils'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: { reference: string; amount: number }
     }
 
-    if (event.event === 'payment.confirmed') {
+    if (event.event === 'wallet.funded' || event.event === 'payment.confirmed') {
       const { reference, amount } = event.data
 
       const deposit = await prisma.deposit.findUnique({
@@ -31,10 +32,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       const amountSats = ngnToSats(amount)
 
+      // Credit the Breez pool wallet via Lightning invoice.
+      // We generate the invoice and store it — in production, Bitnob
+      // would pay this invoice to route the BTC into our Lightning wallet.
+      // HACKATHON: auto-funding is simulated below; wire up Bitnob's
+      // "send to Lightning invoice" endpoint post-demo.
+      let lightningInvoice: string | null = null
+      const breezReady = await isBreezReady()
+
+      if (breezReady) {
+        try {
+          const invoiceDetails = await createDepositInvoice(
+            amountSats,
+            `MoniPool deposit ref:${reference}`
+          )
+          lightningInvoice = invoiceDetails.destination
+          console.log(`[MoniPool] Breez invoice generated for ${amountSats} sats: ${lightningInvoice.slice(0, 40)}…`)
+        } catch (breezErr) {
+          console.error('[MoniPool Error] Breez invoice generation failed, crediting DB only:', breezErr)
+        }
+      } else {
+        console.warn('[MoniPool] Breez not ready — crediting DB balance only (sandbox mode)')
+      }
+
+      // Credit user balance and confirm deposit in a single transaction
       await prisma.$transaction([
         prisma.deposit.update({
           where: { id: deposit.id },
-          data: { status: 'CONFIRMED', amountSats, confirmedAt: new Date() },
+          data: {
+            status: 'CONFIRMED',
+            amountSats,
+            confirmedAt: new Date(),
+            // Store the Lightning invoice so it can be paid by Bitnob later
+            virtualAccount: {
+              ...(deposit.virtualAccount as Record<string, unknown> ?? {}),
+              lightningInvoice,
+            },
+          },
         }),
         prisma.user.update({
           where: { id: deposit.userId },

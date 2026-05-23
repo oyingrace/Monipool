@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-
-// HACKATHON: in-memory store is fine for MVP. Use Redis post-demo.
-export const challenges = new Map<string, { challenge: string; expires: number }>()
+import { challenges } from '@/lib/challengeStore'
 
 export async function POST(): Promise<NextResponse> {
   const challenge = crypto.randomBytes(32).toString('hex')

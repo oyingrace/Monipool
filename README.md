@@ -126,15 +126,4 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ---
 
-## Cursor AI Instructions
-
-Before writing any code, Cursor should read these files in order:
-1. `SKILL.md` — master build guide
-2. `PLAN.md` — phase-by-phase build plan
-3. `docs/ARCHITECTURE.md` — system design
-4. `docs/DATA_MODELS.md` — database schema
-5. `docs/API_REFERENCE.md` — third-party integrations
-
----
-
 *Built with love for hack4Freedom*

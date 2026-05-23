@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyEvent } from 'nostr-tools'
 import { prisma } from '@/lib/prisma'
 import { signJWT } from '@/lib/auth'
-import { challenges } from '../challenge/route'
+import { challenges } from '@/lib/challengeStore'
 import { z } from 'zod'
 
 const VerifySchema = z.object({

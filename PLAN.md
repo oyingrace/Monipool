@@ -26,6 +26,12 @@ Close the loop. Users see their earnings and withdraw back to naira. Build the d
 ## Phase 6 — Polish + Demo Prep (Day 2 Afternoon)
 Fix mobile layouts, add loading.tsx files, seed demo data, and rehearse the demo flow.
 
+## Phase 7 — Breez SDK Liquid (Completed)
+Wire the real Lightning wallet layer. A single custodial pool wallet (Breez SDK Liquid) receives
+BTC from confirmed Bitnob deposits and pays out on withdrawal. Per-user balances remain tracked
+in PostgreSQL as shares of the pool. The Bitnob ↔ Breez payment bridge is scaffolded with clear
+TODO markers for the post-demo completion.
+
 ---
 
 # PART 2: STEP-BY-STEP PLAN
@@ -685,6 +691,62 @@ Test every page at 375px in Chrome DevTools. Fix: nav overflow, card truncation,
 - [ ] `npm run build` completes without errors
 
 **✅ Phase 6 done when:** Full demo can be walked through without any broken states or errors.
+
+---
+
+## PHASE 7 — BREEZ SDK LIQUID
+
+### Step 7.1 — Install SDK
+```bash
+npm install @breeztech/breez-sdk-liquid
+```
+
+### Step 7.2 — Pool wallet singleton (`lib/breez.ts`)
+Single Breez Liquid wallet for the whole MoniPool platform (custodial pool model).
+Functions:
+- `getBreezSdk()` — singleton initialiser, reads `BREEZ_MNEMONIC` + `BREEZ_API_KEY`
+- `getPoolWalletBalance()` → `{ balanceSat, pendingSendSat, pendingReceiveSat }`
+- `createDepositInvoice(amountSat, description)` → BOLT11 invoice for funding pool wallet
+- `payLightningInvoice(bolt11)` → pays from pool wallet (used for withdrawals)
+- `isBreezReady()` → graceful connectivity check (returns false if SDK not configured)
+
+### Step 7.3 — Wire into deposit webhook (`app/api/webhooks/bitnob/route.ts`)
+When Bitnob confirms a deposit:
+1. Call `isBreezReady()` — skip gracefully if not configured
+2. Call `createDepositInvoice(amountSats, description)` → generate Lightning invoice
+3. Store invoice in `deposit.virtualAccount.lightningInvoice` for Bitnob to pay
+4. Credit `user.balanceSats` in DB (same as before — Breez is the custody layer)
+
+**TODO post-demo:** Call Bitnob's "send to Lightning" endpoint to auto-pay the invoice,
+moving BTC from Bitnob into the Breez pool wallet.
+
+### Step 7.4 — Wire into withdrawals (`app/api/withdrawals/route.ts`)
+Two withdrawal routes:
+- **Lightning route** (if `lightningInvoice` provided): call `payLightningInvoice(bolt11)` from Breez wallet — instant settlement
+- **Bank route** (standard): call `initiateNGNPayout()` via Bitnob, log Breez context
+
+**TODO post-demo:** Generate a Bitnob Lightning receive invoice, pay it from Breez,
+Bitnob auto-converts to NGN and sends to bank.
+
+### Step 7.5 — Wallet status API (`app/api/wallet/info/route.ts`)
+`GET /api/wallet/info` — returns Breez wallet connectivity status and live balance.
+Dashboard can call this to show whether the Lightning layer is active.
+
+### Step 7.6 — Environment variables required
+```
+BREEZ_API_KEY=        # from sdk.breez.technology dashboard
+BREEZ_NETWORK=testnet # or mainnet
+BREEZ_MNEMONIC=       # 12-word BIP39 mnemonic — this IS the pool wallet, keep secret
+```
+
+Generate mnemonic:
+```bash
+node -e "const bip39=require('bip39'); console.log(bip39.generateMnemonic())"
+# Or any standard BIP39 wallet generator
+```
+
+**✅ Phase 7 done when:** `isBreezReady()` returns true, `GET /api/wallet/info` shows
+live balance, and deposit webhook logs a Lightning invoice being generated.
 
 ---
 
