@@ -41,8 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const vaData = ((virtualAccount as { data?: unknown }).data ?? virtualAccount) as
-      | Record<string, unknown>
-      | null
+      import('@prisma/client').Prisma.InputJsonValue | null
 
     const deposit = await prisma.deposit.create({
       data: {

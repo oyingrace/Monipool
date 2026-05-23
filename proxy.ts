@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 const PROTECTED_PATHS = ['/dashboard', '/deposit', '/create-pool', '/pool']
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const token = request.cookies.get('monipool_token')
   const isProtected = PROTECTED_PATHS.some(path =>
     request.nextUrl.pathname.startsWith(path)
