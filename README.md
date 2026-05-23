@@ -23,7 +23,7 @@ Inspired by the traditional **ajo/esusu** savings culture: everyone contributes,
 
 | Layer | Technology |
 |---|---|
-| Framework | **Next.js 15** (App Router, TypeScript) |
+| Framework | **Next.js 16** (App Router, TypeScript) |
 | Styling | Tailwind CSS v3 |
 | Client state | Zustand |
 | Database | PostgreSQL + Prisma ORM |
@@ -122,7 +122,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Breez SDK Docs: https://sdk.breez.technology/guide
 - Nostr Protocol: https://nostr.com
 - Amboss Magma: https://amboss.space/magma
-- Next.js 15 Docs: https://nextjs.org/docs
+- Next.js 16 Docs: https://nextjs.org/docs
 
 ---
 

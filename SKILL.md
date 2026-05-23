@@ -5,7 +5,7 @@ description: >
   for Nigerian users. Use this skill for every code generation, component creation,
   API integration, and architecture decision in this project. Always read this file
   before writing any code, creating any file, or making any architectural decision.
-  This skill covers: Next.js 15 App Router, Bitnob API (NGN fiat onramp),
+  This skill covers: Next.js 16 App Router, Bitnob API (NGN fiat onramp),
   Breez SDK (Lightning wallets), Nostr (identity + community), pool logic, and
   yield simulation. Trigger this whenever working on any part of MoniPool.
 ---
@@ -43,7 +43,7 @@ Read this entire file before writing a single line of code.
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Framework | **Next.js 15** (App Router) | Single project — no separate backend |
+| Framework | **Next.js 6** (App Router) | Single project — no separate backend |
 | Language | TypeScript (strict mode) | Everywhere, no exceptions |
 | Styling | Tailwind CSS v3 | No component libraries unless specified |
 | State management | Zustand | Client-side only, lightweight |
@@ -58,7 +58,7 @@ Read this entire file before writing a single line of code.
 
 Do not introduce other libraries without a clear reason. Keep dependencies minimal.
 
-**Critical Next.js 15 rules:**
+**Critical Next.js 16 rules:**
 - Use the **App Router** (`/app` directory) — NOT the Pages Router
 - Server Components by default — only add `'use client'` when genuinely needed (event handlers, browser APIs, Zustand)
 - Route Handlers live at `app/api/[route]/route.ts` and export named functions: `GET`, `POST`, `PUT`, `DELETE`
@@ -261,7 +261,7 @@ User clicks "Add Money"
 
 ---
 
-## 11. Next.js 15 Specific Patterns
+## 11. Next.js 16 Specific Patterns
 
 ### Route Handler pattern:
 ```typescript

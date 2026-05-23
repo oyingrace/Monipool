@@ -34,7 +34,7 @@ Fix mobile layouts, add loading.tsx files, seed demo data, and rehearse the demo
 
 ## PHASE 0 — FOUNDATION
 
-### Step 0.1 — Scaffold Next.js 15 project
+### Step 0.1 — Scaffold Next.js 16 project
 
 ```bash
 npx create-next-app@latest monipool \
