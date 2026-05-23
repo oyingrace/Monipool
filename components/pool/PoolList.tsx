@@ -1,8 +1,10 @@
 'use client'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { PoolCard } from './PoolCard'
 import { Button } from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
 import type { Pool, PoolStatus } from '@/types'
 
 interface PoolListProps {
@@ -24,17 +26,17 @@ export function PoolList({ initialPools }: PoolListProps) {
 
   return (
     <div>
-      {/* Filter tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
         {FILTERS.map((f) => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={cn(
+              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
               filter === f.value
-                ? 'bg-primary text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/40'
-            }`}
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-card text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground'
+            )}
           >
             {f.label}
           </button>
@@ -43,9 +45,9 @@ export function PoolList({ initialPools }: PoolListProps) {
 
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-gray-400 text-base mb-4">No pools found</p>
+          <p className="text-muted-foreground text-base mb-4">No pools found</p>
           <Link href="/create-pool">
-            <Button variant="secondary">Start a Pool</Button>
+            <Button variant="outline">Start a Pool</Button>
           </Link>
         </div>
       ) : (

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { TierBadge, StatusBadge } from '@/components/ui/Badge'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Progress } from '@/components/ui/Progress'
 import { formatNGN } from '@/lib/utils'
 import type { Pool } from '@/types'
 
@@ -15,53 +17,49 @@ export function PoolCard({ pool }: PoolCardProps) {
 
   return (
     <Link href={`/pool/${pool.id}`} className="block group">
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/20 transition-all">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex flex-wrap gap-1.5">
-            <TierBadge tier={pool.tier} />
-            <StatusBadge status={pool.status} />
+      <Card className="p-5 h-full hover:border-primary/30 hover:shadow-md transition-all">
+        <CardContent className="p-0 flex flex-col h-full">
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex flex-wrap gap-1.5">
+              <TierBadge tier={pool.tier} />
+              <StatusBadge status={pool.status} />
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap font-mono tabular-nums">
+              {pool.memberCount} {pool.memberCount === 1 ? 'member' : 'members'}
+            </span>
           </div>
-          <span className="text-xs text-gray-400 whitespace-nowrap">
-            {pool.memberCount} {pool.memberCount === 1 ? 'member' : 'members'}
-          </span>
-        </div>
 
-        <h3 className="font-bold text-gray-900 text-base mb-1 group-hover:text-primary transition-colors">
-          {pool.name}
-        </h3>
+          <h3 className="font-semibold text-foreground text-base mb-1 group-hover:text-primary transition-colors">
+            {pool.name}
+          </h3>
 
-        {pool.description && (
-          <p className="text-sm text-gray-500 mb-3 line-clamp-2">{pool.description}</p>
-        )}
+          {pool.description && (
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">{pool.description}</p>
+          )}
 
-        {/* Progress bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>{formatNGN(pool.currentSize)} raised</span>
-            <span>{progressPercent}%</span>
+          <div className="mb-4 mt-auto">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2 font-mono tabular-nums">
+              <span>{formatNGN(pool.currentSize)} raised</span>
+              <span className="font-semibold text-foreground">{progressPercent}%</span>
+            </div>
+            <Progress value={progressPercent} />
+            <p className="text-xs text-muted-foreground mt-1.5">Target: {formatNGN(pool.targetSize)}</p>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-400 mt-1">Target: {formatNGN(pool.targetSize)}</p>
-        </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">
-              {pool.apyMin}–{pool.apyMax}% APY
-            </p>
-            <p className="text-xs text-gray-400">(Estimated. Not guaranteed.)</p>
+          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+            <div>
+              <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                {pool.apyMin}–{pool.apyMax}% APY
+              </p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Estimated</p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-sm font-medium tabular-nums text-foreground">{pool.lockDays} days</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">lock period</p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-700">{pool.lockDays} days</p>
-            <p className="text-xs text-gray-400">lock period</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </Link>
   )
 }

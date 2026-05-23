@@ -1,7 +1,11 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Shield, TrendingUp, Banknote, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Logo } from '@/components/layout/Logo'
 import { useUserStore } from '@/store/userStore'
 import {
   generateKeypair,
@@ -25,16 +29,10 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const hasKeypair = (): boolean => {
-    return !!localStorage.getItem(STORAGE_KEY)
-  }
+  const hasKeypair = (): boolean => !!localStorage.getItem(STORAGE_KEY)
 
   const handleSignIn = (): void => {
-    if (hasKeypair()) {
-      setStep('pin-enter')
-    } else {
-      setStep('pin-create')
-    }
+    setStep(hasKeypair() ? 'pin-enter' : 'pin-create')
   }
 
   const authenticate = async (privkey: Uint8Array, pubkey: string): Promise<void> => {
@@ -54,7 +52,10 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pubkey, signedEvent, challengeId }),
       })
-      const verifyData = (await verifyRes.json()) as { data?: { balanceSats: number; id: string; nostrPubKey: string; displayName: string | null; createdAt: string }; error?: string }
+      const verifyData = (await verifyRes.json()) as {
+        data?: { balanceSats: number; id: string; nostrPubKey: string; displayName: string | null; createdAt: string }
+        error?: string
+      }
       if (!verifyRes.ok) throw new Error(verifyData.error ?? 'Sign in failed')
 
       if (verifyData.data) {
@@ -114,100 +115,101 @@ export default function LoginPage() {
             digits[i] = e.target.value.replace(/\D/g, '')
             onChange(digits.join(''))
             if (e.target.value && i < 3) {
-              const next = document.getElementById(`pin-${i + 1}`)
-              next?.focus()
+              document.getElementById(`pin-${i + 1}`)?.focus()
             }
           }}
           id={`pin-${i}`}
-          className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="size-14 text-center text-2xl font-bold font-mono border-2 border-border rounded-2xl bg-card focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-ring/30 transition-colors"
         />
       ))}
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-primary/[0.05] blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-sm relative">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black">
-            <span className="text-primary">Moni</span>
-            <span className="text-accent">Pool</span>
-          </h1>
-          <p className="text-gray-500 mt-2 text-base">
+          <Logo size="lg" />
+          <p className="text-muted-foreground mt-3 text-base">
             Bitcoin yield. Naira simplicity. Community power.
           </p>
         </div>
 
         {step === 'intro' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-4">
-              <Feature icon="🏦" text="Save in naira with your group" />
-              <Feature icon="📈" text="Earn Bitcoin yield automatically" />
-              <Feature icon="💸" text="Withdraw back to your bank anytime" />
-              <Feature icon="🔐" text="No password — secured by your 4-digit PIN" />
-            </div>
-            <Button size="lg" onClick={handleSignIn}>
-              Get Started
-            </Button>
-            <p className="text-xs text-center text-gray-400">
+            <Card className="p-6">
+              <CardContent className="p-0 space-y-4">
+                <Feature icon={Banknote} text="Save in naira with your group" />
+                <Feature icon={TrendingUp} text="Earn Bitcoin yield automatically" />
+                <Feature icon={Shield} text="Withdraw back to your bank anytime" />
+                <Feature icon={Lock} text="No password — secured by your 4-digit PIN" />
+              </CardContent>
+            </Card>
+            <Button size="lg" onClick={handleSignIn}>Get Started</Button>
+            <p className="text-xs text-center text-muted-foreground">
               No email. No password. Your identity is yours.
             </p>
           </div>
         )}
 
         {step === 'pin-create' && (
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Create your PIN</h2>
-              <p className="text-sm text-gray-500 text-center">
-                This PIN protects your account. Do not forget it.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600 text-center">Enter 4-digit PIN</p>
-              <PinInput value={pin} onChange={setPin} />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600 text-center">Confirm PIN</p>
-              <PinInput value={confirmPin} onChange={setConfirmPin} />
-            </div>
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-            <Button size="lg" onClick={handleCreatePin} loading={loading} disabled={pin.length < 4 || confirmPin.length < 4}>
-              Create Account
-            </Button>
-          </div>
+          <Card className="p-6">
+            <CardContent className="p-0 space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground text-center mb-1">Create your PIN</h2>
+                <p className="text-sm text-muted-foreground text-center">
+                  This PIN protects your account. Do not forget it.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">Enter 4-digit PIN</p>
+                <PinInput value={pin} onChange={setPin} />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">Confirm PIN</p>
+                <PinInput value={confirmPin} onChange={setConfirmPin} />
+              </div>
+              {error && <p className="text-sm text-destructive text-center">{error}</p>}
+              <Button size="lg" onClick={handleCreatePin} loading={loading} disabled={pin.length < 4 || confirmPin.length < 4}>
+                Create Account
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {step === 'pin-enter' && (
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Welcome back</h2>
-              <p className="text-sm text-gray-500 text-center">Enter your 4-digit PIN to sign in</p>
-            </div>
-            <PinInput value={pin} onChange={setPin} />
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-            <Button size="lg" onClick={handleEnterPin} loading={loading} disabled={pin.length < 4}>
-              Sign In
-            </Button>
-            <button
-              onClick={() => {
-                localStorage.removeItem(STORAGE_KEY)
-                setPin('')
-                setStep('pin-create')
-                setError('')
-              }}
-              className="w-full text-sm text-gray-400 hover:text-gray-600 text-center"
-            >
-              Use a different account
-            </button>
-          </div>
+          <Card className="p-6">
+            <CardContent className="p-0 space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground text-center mb-1">Welcome back</h2>
+                <p className="text-sm text-muted-foreground text-center">Enter your 4-digit PIN to sign in</p>
+              </div>
+              <PinInput value={pin} onChange={setPin} />
+              {error && <p className="text-sm text-destructive text-center">{error}</p>}
+              <Button size="lg" onClick={handleEnterPin} loading={loading} disabled={pin.length < 4}>
+                Sign In
+              </Button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem(STORAGE_KEY)
+                  setPin('')
+                  setStep('pin-create')
+                  setError('')
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground text-center transition-colors"
+              >
+                Use a different account
+              </button>
+            </CardContent>
+          </Card>
         )}
 
         {step === 'loading' && (
           <div className="text-center py-8">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Signing you in…</p>
+            <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Signing you in…</p>
           </div>
         )}
       </div>
@@ -215,11 +217,13 @@ export default function LoginPage() {
   )
 }
 
-function Feature({ icon, text }: { icon: string; text: string }) {
+function Feature({ icon: Icon, text }: { icon: React.ComponentType<{ className?: string }>; text: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xl">{icon}</span>
-      <span className="text-sm text-gray-700">{text}</span>
+      <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="size-4 text-primary" />
+      </div>
+      <span className="text-sm text-foreground">{text}</span>
     </div>
   )
 }

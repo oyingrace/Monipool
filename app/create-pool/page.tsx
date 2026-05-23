@@ -1,13 +1,15 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Navbar } from '@/components/layout/Navbar'
-import { PageWrapper } from '@/components/layout/PageWrapper'
+import { ArrowLeft } from 'lucide-react'
+import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useToastStore } from '@/store/toastStore'
-import { formatNGN } from '@/lib/utils'
+import { formatNGN, cn } from '@/lib/utils'
 import { POOL_TIER_CONFIG } from '@/types'
 import type { PoolTier } from '@/types'
 
@@ -54,86 +56,88 @@ export default function CreatePoolPage() {
   }
 
   return (
-    <>
-      <Navbar />
-      <PageWrapper className="max-w-lg">
-        <div className="mb-6">
-          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">← Back</Link>
-          <h1 className="text-2xl font-black text-gray-900 mt-3">Create a Pool</h1>
-          <p className="text-gray-500 mt-1 text-sm">Start a savings pool for your group. Others can join and earn with you.</p>
-        </div>
+    <AppShell narrow>
+      <div className="mb-8">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="size-3.5" />
+          Back
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Create a Pool</h1>
+        <p className="text-sm text-muted-foreground mt-1">Start a savings pool for your group</p>
+      </div>
 
-        <div className="space-y-5">
-          <Input
-            label="Pool Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Lagos Market Women Fund"
-            maxLength={60}
-            error={errors.name}
+      <div className="space-y-5">
+        <Input
+          label="Pool Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Lagos Market Women Fund"
+          maxLength={60}
+          error={errors.name}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">Description (optional)</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Tell people about this pool…"
+            maxLength={300}
+            rows={3}
+            className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-ring/30 resize-none shadow-xs"
           />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Description (optional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Tell people about this pool…"
-              maxLength={300}
-              rows={3}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-            />
-            {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
-          </div>
-
-          {/* Tier selection */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Pool Type</label>
-            <div className="space-y-3">
-              {TIERS.map((t) => {
-                const cfg = POOL_TIER_CONFIG[t]
-                const isSelected = tier === t
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTier(t)}
-                    className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${cfg.badgeColor}`}>
-                        {cfg.label}
-                      </span>
-                      <span className="text-sm font-semibold text-primary">
-                        {cfg.apyMin}–{cfg.apyMax}% APY
-                      </span>
-                    </div>
-                    <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                      <span>Min: {formatNGN(cfg.minDeposit)}</span>
-                      <span>Target: {formatNGN(cfg.targetSize)}</span>
-                      <span>{cfg.lockDays} days</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            <p className="text-xs text-gray-400 mt-2">(Estimated. Not guaranteed.)</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1">
-            <p>Your pool will open immediately for members to join.</p>
-            <p>It activates once it reaches <strong>{formatNGN(selected.targetSize)}</strong>.</p>
-          </div>
-
-          <Button size="lg" onClick={handleCreate} loading={loading} disabled={!name.trim()}>
-            Create Pool
-          </Button>
+          {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
         </div>
-      </PageWrapper>
-    </>
+
+        <div>
+          <label className="text-sm font-medium text-foreground block mb-3">Pool Type</label>
+          <div className="space-y-3">
+            {TIERS.map((t) => {
+              const cfg = POOL_TIER_CONFIG[t]
+              const isSelected = tier === t
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTier(t)}
+                  className={cn(
+                    'w-full text-left rounded-2xl border-2 p-4 transition-all',
+                    isSelected
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : 'border-border bg-card hover:border-primary/30'
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn('text-[11px] font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full', cfg.badgeColor)}>
+                      {cfg.label}
+                    </span>
+                    <span className="font-mono text-sm font-semibold tabular-nums text-primary">
+                      {cfg.apyMin}–{cfg.apyMax}% APY
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2 font-mono tabular-nums">
+                    <span>Min: {formatNGN(cfg.minDeposit)}</span>
+                    <span>Target: {formatNGN(cfg.targetSize)}</span>
+                    <span>{cfg.lockDays} days</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Estimated. Not guaranteed.</p>
+        </div>
+
+        <Card className="p-4 bg-muted/50">
+          <CardContent className="p-0 text-sm text-muted-foreground space-y-1">
+            <p>Your pool will open immediately for members to join.</p>
+            <p>It activates once it reaches <strong className="text-foreground font-mono tabular-nums">{formatNGN(selected.targetSize)}</strong>.</p>
+          </CardContent>
+        </Card>
+
+        <Button size="lg" onClick={handleCreate} loading={loading} disabled={!name.trim()}>
+          Create Pool
+        </Button>
+      </div>
+    </AppShell>
   )
 }

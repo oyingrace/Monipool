@@ -1,7 +1,10 @@
 'use client'
+
 import { useState } from 'react'
+import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useToastStore } from '@/store/toastStore'
 import { formatNGN } from '@/lib/utils'
 
@@ -91,16 +94,14 @@ export function WithdrawFlow({ balanceSats }: WithdrawFlowProps) {
   if (step === 'success') {
     return (
       <div className="text-center py-8">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+        <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Check className="size-8 text-primary" />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Withdrawal submitted</h3>
-        <p className="text-gray-500 mb-6">
+        <h3 className="text-xl font-semibold text-foreground mb-2">Withdrawal submitted</h3>
+        <p className="text-muted-foreground mb-6">
           {formatNGN(parseInt(amount, 10))} will arrive in your bank account within 24 hours.
         </p>
-        <Button onClick={() => setStep('form')} variant="secondary">
+        <Button onClick={() => setStep('form')} variant="outline">
           Withdraw again
         </Button>
       </div>
@@ -109,10 +110,12 @@ export function WithdrawFlow({ balanceSats }: WithdrawFlowProps) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-50 rounded-xl p-4 text-sm">
-        <p className="text-gray-500">Available balance</p>
-        <p className="text-2xl font-black text-gray-900">{formatNGN(maxNGN)}</p>
-      </div>
+      <Card className="p-4 bg-muted/50">
+        <CardContent className="p-0">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Available balance</p>
+          <p className="font-mono text-2xl font-bold tabular-nums text-foreground">{formatNGN(maxNGN)}</p>
+        </CardContent>
+      </Card>
 
       <Input
         label="Amount (₦)"
@@ -126,19 +129,19 @@ export function WithdrawFlow({ balanceSats }: WithdrawFlowProps) {
         error={errors.amount}
       />
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Bank</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-foreground">Bank</label>
         <select
           value={bankCode}
           onChange={(e) => setBankCode(e.target.value)}
-          className={`w-full rounded-xl border px-4 py-3 text-base text-gray-900 bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors.bankCode ? 'border-red-400' : 'border-gray-300'}`}
+          className={`w-full rounded-xl border h-11 px-4 text-sm text-foreground bg-card shadow-xs focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-ring/30 ${errors.bankCode ? 'border-destructive' : 'border-input'}`}
         >
           <option value="">Select your bank</option>
           {NIGERIAN_BANKS.map((b) => (
             <option key={b.code} value={b.code}>{b.name}</option>
           ))}
         </select>
-        {errors.bankCode && <p className="text-sm text-red-600">{errors.bankCode}</p>}
+        {errors.bankCode && <p className="text-sm text-destructive">{errors.bankCode}</p>}
       </div>
 
       <Input

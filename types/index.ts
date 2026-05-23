@@ -113,7 +113,7 @@ export const POOL_TIER_CONFIG: Record<PoolTier, {
 }> = {
   STARTER: {
     label: 'Starter',
-    badgeColor: 'bg-emerald-100 text-emerald-800',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
     minDeposit: 10_000,
     targetSize: 500_000,
     lockDays: 30,
@@ -123,7 +123,7 @@ export const POOL_TIER_CONFIG: Record<PoolTier, {
   },
   GROWTH: {
     label: 'Growth',
-    badgeColor: 'bg-amber-100 text-amber-800',
+    badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200/60',
     minDeposit: 50_000,
     targetSize: 2_000_000,
     lockDays: 60,
@@ -133,7 +133,7 @@ export const POOL_TIER_CONFIG: Record<PoolTier, {
   },
   POWER: {
     label: 'Power',
-    badgeColor: 'bg-purple-100 text-purple-800',
+    badgeColor: 'bg-violet-50 text-violet-700 border border-violet-200/60',
     minDeposit: 200_000,
     targetSize: 5_000_000,
     lockDays: 90,

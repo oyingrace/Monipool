@@ -1,13 +1,15 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { Navbar } from '@/components/layout/Navbar'
-import { PageWrapper } from '@/components/layout/PageWrapper'
+import { AppShell } from '@/components/layout/AppShell'
 import { TierBadge, StatusBadge } from '@/components/ui/Badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Progress } from '@/components/ui/Progress'
 import { NostrFeed } from '@/components/feed/NostrFeed'
 import { PoolDetailActions } from './PoolDetailActions'
-import { formatNGN, formatDate, satsToNGN } from '@/lib/utils'
+import { formatNGN, formatDate } from '@/lib/utils'
 import type { Pool, PoolMember } from '@/types'
 
 async function getPool(id: string, userId: string | null) {
@@ -55,109 +57,107 @@ export default async function PoolDetailPage({
   }
 
   return (
-    <>
-      <Navbar />
-      <PageWrapper>
-        <div className="mb-4">
-          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">
-            ← Back to pools
-          </Link>
-        </div>
+    <AppShell>
+      <div className="mb-6">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="size-3.5" />
+          Back to pools
+        </Link>
+      </div>
 
-        {/* Pool header */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-4">
-          <div className="flex flex-wrap gap-2 mb-3">
+      <Card className="p-6 mb-4">
+        <CardContent className="p-0">
+          <div className="flex flex-wrap gap-2 mb-4">
             <TierBadge tier={pool.tier} />
             <StatusBadge status={pool.status} />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 mb-1">{pool.name}</h1>
-          {pool.description && <p className="text-gray-500 mb-4">{pool.description}</p>}
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">{pool.name}</h1>
+          {pool.description && <p className="text-muted-foreground mb-5 leading-relaxed">{pool.description}</p>}
 
-          {/* Progress */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-1.5">
+          <div className="mb-5">
+            <div className="flex justify-between text-sm text-muted-foreground mb-2 font-mono tabular-nums">
               <span>{formatNGN(pool.currentSize)} raised</span>
-              <span className="font-semibold">{progressPercent}%</span>
+              <span className="font-semibold text-foreground">{progressPercent}%</span>
             </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Target: {formatNGN(pool.targetSize)}</p>
+            <Progress value={progressPercent} className="h-3" />
+            <p className="text-xs text-muted-foreground mt-1.5">Target: {formatNGN(pool.targetSize)}</p>
           </div>
 
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-50">
+          <div className="grid grid-cols-3 gap-4 pt-5 border-t border-border/50">
             <div>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="font-mono text-lg font-bold tabular-nums text-foreground">
                 {pool.apyMin}–{pool.apyMax}%
               </p>
-              <p className="text-xs text-gray-400">Est. APY*</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Est. APY</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{pool.lockDays}d</p>
-              <p className="text-xs text-gray-400">Lock period</p>
+              <p className="font-mono text-lg font-bold tabular-nums text-foreground">{pool.lockDays}d</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lock period</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{pool._count.members}</p>
-              <p className="text-xs text-gray-400">Members</p>
+              <p className="font-mono text-lg font-bold tabular-nums text-foreground">{pool._count.members}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Members</p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-3">*Estimated. Not guaranteed.</p>
-        </div>
+          <p className="text-xs text-muted-foreground mt-3">*Estimated. Not guaranteed.</p>
+        </CardContent>
+      </Card>
 
-        {/* My membership */}
-        {myMembership && (
-          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 mb-4">
-            <h3 className="font-bold text-primary mb-3">Your Membership</h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+      {myMembership && (
+        <Card className="p-5 mb-4 border-primary/20 bg-primary/5">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-primary text-base">Your Membership</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Your deposit</p>
-                <p className="font-semibold text-gray-900">{formatNGN(myMembership.depositNGN)}</p>
-                <p className="text-xs text-gray-400">{myMembership.depositSats.toLocaleString()} sats</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Your deposit</p>
+                <p className="font-mono font-semibold tabular-nums text-foreground">{formatNGN(myMembership.depositNGN)}</p>
+                <p className="text-xs text-muted-foreground font-mono tabular-nums">{myMembership.depositSats.toLocaleString()} sats</p>
               </div>
               <div>
-                <p className="text-gray-500">Earnings so far</p>
-                <p className="font-semibold text-primary">{formatNGN(myMembership.earnedYieldNGN)}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Earnings so far</p>
+                <p className="font-mono font-semibold tabular-nums text-primary">{formatNGN(myMembership.earnedYieldNGN)}</p>
               </div>
               <div>
-                <p className="text-gray-500">Your share</p>
-                <p className="font-semibold text-gray-900">{myMembership.sharePercent.toFixed(2)}%</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Your share</p>
+                <p className="font-mono font-semibold tabular-nums text-foreground">{myMembership.sharePercent.toFixed(2)}%</p>
               </div>
               <div>
-                <p className="text-gray-500">Joined</p>
-                <p className="font-semibold text-gray-900">{formatDate(myMembership.joinedAt)}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Joined</p>
+                <p className="font-semibold text-foreground">{formatDate(myMembership.joinedAt)}</p>
               </div>
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Actions (Client Component for join button) */}
-        {pool.status === 'OPEN' && !myMembership && (
-          <PoolDetailActions pool={poolForClient} isAuthenticated={!!auth} />
-        )}
+      {pool.status === 'OPEN' && !myMembership && (
+        <PoolDetailActions pool={poolForClient} isAuthenticated={!!auth} />
+      )}
 
-        {pool.status === 'COMPLETED' && (
-          <div className="bg-white rounded-2xl p-5 border border-gray-100 mb-4 text-center">
-            <p className="text-gray-500 text-sm">
+      {pool.status === 'COMPLETED' && (
+        <Card className="p-5 mb-4 text-center">
+          <CardContent className="p-0">
+            <p className="text-muted-foreground text-sm">
               This pool completed on {pool.completedAt ? formatDate(pool.completedAt) : '—'}.
               Members can withdraw their earnings from the{' '}
-              <Link href="/dashboard" className="text-primary font-semibold hover:underline">
+              <Link href="/dashboard" className="text-primary font-medium hover:underline">
                 dashboard
               </Link>
               .
             </p>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {pool.activatedAt && (
-          <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 mb-4">
-            <p className="text-sm text-amber-800">
-              🚀 This pool activated on {formatDate(pool.activatedAt)} and is currently earning.
+      {pool.activatedAt && (
+        <Card className="p-4 mb-4 border-warning/30 bg-warning/10">
+          <CardContent className="p-0">
+            <p className="text-sm text-foreground">
+              This pool activated on {formatDate(pool.activatedAt)} and is currently earning.
               Lock ends on{' '}
-              <strong>
+              <strong className="font-mono tabular-nums">
                 {formatDate(
                   new Date(
                     new Date(pool.activatedAt).getTime() + pool.lockDays * 86_400_000
@@ -166,16 +166,15 @@ export default async function PoolDetailPage({
               </strong>
               .
             </p>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Nostr feed */}
-        {pool.nostrGroupId && (
-          <div className="mt-4">
-            <NostrFeed nostrGroupId={pool.nostrGroupId} poolName={pool.name} />
-          </div>
-        )}
-      </PageWrapper>
-    </>
+      {pool.nostrGroupId && (
+        <div className="mt-4">
+          <NostrFeed nostrGroupId={pool.nostrGroupId} poolName={pool.name} />
+        </div>
+      )}
+    </AppShell>
   )
 }

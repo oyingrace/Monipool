@@ -1,5 +1,7 @@
 'use client'
 
+import { Button } from '@/components/ui/Button'
+
 export default function DashboardError({
   reset,
 }: {
@@ -7,15 +9,10 @@ export default function DashboardError({
   reset: () => void
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <div className="text-center">
-        <p className="text-gray-600 mb-4">Something went wrong loading your dashboard.</p>
-        <button
-          onClick={reset}
-          className="px-5 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark"
-        >
-          Try again
-        </button>
+        <p className="text-muted-foreground mb-4">Something went wrong loading your dashboard.</p>
+        <Button onClick={reset}>Try again</Button>
       </div>
     </div>
   )

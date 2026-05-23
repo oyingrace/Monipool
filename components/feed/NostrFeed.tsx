@@ -1,5 +1,8 @@
 'use client'
+
 import { useEffect, useRef, useState } from 'react'
+import { Radio } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import type { FeedItem } from '@/types'
 
 interface NostrFeedProps {
@@ -71,23 +74,33 @@ export function NostrFeed({ nostrGroupId, poolName }: NostrFeedProps) {
   }, [nostrGroupId])
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-50">
-        <span className="font-bold text-gray-900">Pool Activity</span>
-        <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-gray-300'}`} />
-        <span className="text-xs text-gray-400">{connected ? 'Live' : 'Reconnecting…'}</span>
-      </div>
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b border-border/50 pb-4">
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">Pool Activity</CardTitle>
+          <span className="relative flex size-2">
+            {connected && (
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            )}
+            <span className={`relative inline-flex size-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+          </span>
+          <span className="text-xs text-muted-foreground">{connected ? 'Live' : 'Reconnecting…'}</span>
+        </div>
+      </CardHeader>
 
       {items.length === 0 ? (
-        <div className="py-12 text-center text-gray-400 text-sm">
-          {connected ? `Listening for ${poolName} activity…` : 'Connecting to feed…'}
-        </div>
+        <CardContent className="py-12 text-center">
+          <Radio className="size-8 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">
+            {connected ? `Listening for ${poolName} activity…` : 'Connecting to feed…'}
+          </p>
+        </CardContent>
       ) : (
-        <ul className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+        <ul className="divide-y divide-border/50 max-h-64 overflow-y-auto">
           {items.map((item) => (
-            <li key={item.id} className="px-5 py-3 text-sm">
-              <p className="text-gray-800">{item.message}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+            <li key={item.id} className="px-5 py-3.5 text-sm">
+              <p className="text-foreground leading-relaxed">{item.message}</p>
+              <p className="text-xs text-muted-foreground mt-1 font-mono tabular-nums">
                 {new Date(item.timestamp * 1000).toLocaleTimeString('en-NG', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -97,6 +110,6 @@ export function NostrFeed({ nostrGroupId, poolName }: NostrFeedProps) {
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   )
 }

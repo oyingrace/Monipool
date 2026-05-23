@@ -1,5 +1,7 @@
 'use client'
 
+import { Button } from '@/components/ui/Button'
+
 export default function GlobalError({
   reset,
 }: {
@@ -8,17 +10,12 @@ export default function GlobalError({
 }) {
   return (
     <html>
-      <body>
+      <body className="bg-background">
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-500 mb-6">Please try refreshing the page.</p>
-            <button
-              onClick={reset}
-              className="px-5 py-2.5 bg-primary text-white rounded-xl font-semibold"
-            >
-              Try again
-            </button>
+            <h2 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h2>
+            <p className="text-muted-foreground mb-6">Please try refreshing the page.</p>
+            <Button onClick={reset}>Try again</Button>
           </div>
         </div>
       </body>

@@ -1,9 +1,11 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useToastStore } from '@/store/toastStore'
 import { formatNGN } from '@/lib/utils'
 import type { Pool } from '@/types'
@@ -52,25 +54,27 @@ export function JoinPoolModal({ pool, isOpen, onClose }: JoinPoolModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Join ${pool.name}`}>
       <div className="space-y-4">
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Minimum deposit</span>
-            <span className="font-semibold">{formatNGN(pool.minDeposit)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Lock period</span>
-            <span className="font-semibold">{pool.lockDays} days</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Estimated APY</span>
-            <span className="font-semibold text-primary">
-              {pool.apyMin}–{pool.apyMax}%
-            </span>
-          </div>
-        </div>
+        <Card className="p-4 bg-muted/50">
+          <CardContent className="p-0 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Minimum deposit</span>
+              <span className="font-mono font-semibold tabular-nums">{formatNGN(pool.minDeposit)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Lock period</span>
+              <span className="font-mono font-semibold tabular-nums">{pool.lockDays} days</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Estimated APY</span>
+              <span className="font-mono font-semibold tabular-nums text-primary">
+                {pool.apyMin}–{pool.apyMax}%
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
-        <p className="text-xs text-gray-400">
-          (Estimated. Not guaranteed.) Your funds will be locked for {pool.lockDays} days.
+        <p className="text-xs text-muted-foreground">
+          Estimated. Not guaranteed. Your funds will be locked for {pool.lockDays} days.
         </p>
 
         <Input
@@ -85,7 +89,7 @@ export function JoinPoolModal({ pool, isOpen, onClose }: JoinPoolModalProps) {
         />
 
         <div className="flex gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
           <Button onClick={handleJoin} loading={loading} className="flex-1">

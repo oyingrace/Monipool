@@ -1,14 +1,16 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Navbar } from '@/components/layout/Navbar'
-import { PageWrapper } from '@/components/layout/PageWrapper'
+import { ArrowLeft, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useDeposit } from '@/hooks/useDeposit'
 import { useToastStore } from '@/store/toastStore'
 import { useUserStore } from '@/store/userStore'
-import { formatNGN, satsToNGN } from '@/lib/utils'
+import { formatNGN, satsToNGN, cn } from '@/lib/utils'
 import type { Deposit } from '@/types'
 
 type Step = 'amount' | 'waiting' | 'success'
@@ -34,7 +36,6 @@ export default function DepositPage() {
   useEffect(() => {
     if (isConfirmed) {
       setStep('success')
-      // Refresh user balance
       fetch('/api/auth/me')
         .then((r) => r.json())
         .then((d: { data?: { id: string; nostrPubKey: string; displayName: string | null; balanceSats: number; createdAt: string } }) => {
@@ -90,125 +91,132 @@ export default function DepositPage() {
   const virtualAccount = deposit?.virtualAccount
 
   return (
-    <>
-      <Navbar />
-      <PageWrapper className="max-w-sm">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">
-            ← Back
-          </Link>
-          <h1 className="text-2xl font-black text-gray-900 mt-3">Add Money</h1>
-        </div>
+    <AppShell narrow>
+      <div className="mb-8">
+        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="size-3.5" />
+          Back
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Add Money</h1>
+        <p className="text-sm text-muted-foreground mt-1">Deposit naira via bank transfer</p>
+      </div>
 
-        {step === 'amount' && (
-          <div className="space-y-5">
-            {user && (
-              <div className="bg-gray-50 rounded-xl p-4 text-sm">
-                <p className="text-gray-500">Current balance</p>
-                <p className="text-xl font-bold text-gray-900">{formatNGN(satsToNGN(user.balanceSats))}</p>
-              </div>
-            )}
+      {step === 'amount' && (
+        <div className="space-y-5">
+          {user && (
+            <Card className="p-4">
+              <CardContent className="p-0">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Current balance</p>
+                <p className="font-mono text-2xl font-bold tabular-nums text-foreground">{formatNGN(satsToNGN(user.balanceSats))}</p>
+              </CardContent>
+            </Card>
+          )}
 
-            <Input
-              label="Amount (₦)"
-              prefix="₦"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="10,000"
-              min={1000}
-              error={error}
-            />
+          <Input
+            label="Amount (₦)"
+            prefix="₦"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="10,000"
+            min={1000}
+            error={error}
+          />
 
-            <div className="grid grid-cols-3 gap-2">
-              {[10000, 50000, 100000].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setAmount(preset.toString())}
-                  className="py-2 text-sm font-medium rounded-xl border border-gray-200 hover:border-primary hover:text-primary transition-colors"
-                >
-                  {formatNGN(preset)}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-xs text-gray-400">
-              Minimum: ₦1,000. Funds will appear in your MoniPool balance once your bank transfer is confirmed.
-            </p>
-
-            <Button size="lg" onClick={handleGenerate} loading={loading} disabled={!amount}>
-              Get Bank Account
-            </Button>
+          <div className="grid grid-cols-3 gap-2">
+            {[10000, 50000, 100000].map((preset) => (
+              <button
+                key={preset}
+                onClick={() => setAmount(preset.toString())}
+                className={cn(
+                  'py-2.5 text-sm font-medium rounded-full border transition-all font-mono tabular-nums',
+                  amount === preset.toString()
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card hover:border-primary/40 hover:text-primary'
+                )}
+              >
+                {formatNGN(preset)}
+              </button>
+            ))}
           </div>
-        )}
 
-        {step === 'waiting' && virtualAccount && (
-          <div className="space-y-5">
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500 mb-1">Transfer exactly</p>
-              <p className="text-3xl font-black text-primary">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Minimum: ₦1,000. Funds will appear in your MoniPool balance once your bank transfer is confirmed.
+          </p>
+
+          <Button size="lg" onClick={handleGenerate} loading={loading} disabled={!amount}>
+            Get Bank Account
+          </Button>
+        </div>
+      )}
+
+      {step === 'waiting' && virtualAccount && (
+        <div className="space-y-5">
+          <Card className="p-6 text-center border-primary/20 bg-primary/5">
+            <CardContent className="p-0">
+              <p className="text-sm text-muted-foreground mb-1">Transfer exactly</p>
+              <p className="font-mono text-3xl font-bold tabular-nums text-primary">
                 {formatNGN(deposit?.amountNGN ?? 0)}
               </p>
-              <p className="text-xs text-gray-400 mt-1">to this account</p>
-            </div>
+              <p className="text-xs text-muted-foreground mt-1">to this account</p>
+            </CardContent>
+          </Card>
 
-            <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-              <BankDetail label="Bank Name" value={virtualAccount.bankName} />
-              <BankDetail label="Account Number" value={virtualAccount.accountNumber} copyable />
-              <BankDetail label="Amount" value={formatNGN(deposit?.amountNGN ?? 0)} />
-            </div>
+          <Card className="overflow-hidden">
+            <BankDetail label="Bank Name" value={virtualAccount.bankName} />
+            <BankDetail label="Account Number" value={virtualAccount.accountNumber} copyable />
+            <BankDetail label="Amount" value={formatNGN(deposit?.amountNGN ?? 0)} />
+          </Card>
 
-            <div className="text-center">
-              <div className={`text-2xl font-mono font-bold ${countdown < 120 ? 'text-red-500' : 'text-gray-700'}`}>
-                {formatCountdown(countdown)}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Time remaining</p>
+          <div className="text-center">
+            <div className={cn(
+              'font-mono text-2xl font-bold tabular-nums',
+              countdown < 120 ? 'text-destructive' : 'text-foreground'
+            )}>
+              {formatCountdown(countdown)}
             </div>
-
-            <div className="flex items-center gap-2 text-sm text-gray-500 bg-amber-50 rounded-xl p-3">
-              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Transfer from your bank app. We will update your balance once confirmed.</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Waiting for your transfer…
-            </div>
-
-            <button
-              onClick={() => { setStep('amount'); setAmount('') }}
-              className="text-sm text-gray-400 hover:text-gray-600 w-full text-center"
-            >
-              Cancel
-            </button>
+            <p className="text-xs text-muted-foreground mt-1">Time remaining</p>
           </div>
-        )}
 
-        {step === 'success' && (
-          <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">Transfer confirmed!</h2>
-            <p className="text-gray-500">
-              {formatNGN(deposit?.amountNGN ?? 0)} has been added to your balance.
+          <div className="flex items-start gap-2.5 text-sm text-muted-foreground bg-warning/10 rounded-2xl p-4 border border-warning/20">
+            <AlertCircle className="size-4 text-warning shrink-0 mt-0.5" />
+            <span>Transfer from your bank app. We will update your balance once confirmed.</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin text-primary" />
+            Waiting for your transfer…
+          </div>
+
+          <button
+            onClick={() => { setStep('amount'); setAmount('') }}
+            className="text-sm text-muted-foreground hover:text-foreground w-full text-center transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {step === 'success' && (
+        <div className="text-center py-8 space-y-4">
+          <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Check className="size-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Transfer confirmed!</h2>
+          <p className="text-muted-foreground">
+            {formatNGN(deposit?.amountNGN ?? 0)} has been added to your balance.
+          </p>
+          {user && (
+            <p className="font-mono text-2xl font-bold tabular-nums text-primary">
+              {formatNGN(satsToNGN(user.balanceSats))}
             </p>
-            {user && (
-              <p className="text-2xl font-black text-primary">
-                {formatNGN(satsToNGN(user.balanceSats))}
-              </p>
-            )}
-            <Link href="/dashboard">
-              <Button size="lg">View Dashboard</Button>
-            </Link>
-          </div>
-        )}
-      </PageWrapper>
-    </>
+          )}
+          <Link href="/dashboard">
+            <Button size="lg">View Dashboard</Button>
+          </Link>
+        </div>
+      )}
+    </AppShell>
   )
 }
 
@@ -222,13 +230,13 @@ function BankDetail({ label, value, copyable }: { label: string; value: string; 
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-sm text-gray-500">{label}</span>
+    <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 last:border-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-900">{value}</span>
+        <span className="text-sm font-semibold font-mono tabular-nums text-foreground">{value}</span>
         {copyable && (
-          <button onClick={handleCopy} className="text-xs text-primary hover:underline">
-            {copied ? 'Copied!' : 'Copy'}
+          <button onClick={handleCopy} className="text-primary hover:text-primary/80 transition-colors">
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           </button>
         )}
       </div>

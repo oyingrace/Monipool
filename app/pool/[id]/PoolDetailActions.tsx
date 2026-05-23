@@ -1,7 +1,9 @@
 'use client'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/Card'
 import { JoinPoolModal } from '@/components/pool/JoinPoolModal'
 import { formatNGN } from '@/lib/utils'
 import type { Pool } from '@/types'
@@ -16,14 +18,16 @@ export function PoolDetailActions({ pool, isAuthenticated }: PoolDetailActionsPr
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 mb-4 text-center">
-        <p className="text-gray-500 text-sm mb-4">
-          Sign in to join this pool. Minimum deposit: {formatNGN(pool.minDeposit)}
-        </p>
-        <Link href="/login">
-          <Button>Sign In to Join</Button>
-        </Link>
-      </div>
+      <Card className="p-5 mb-4 text-center">
+        <CardContent className="p-0">
+          <p className="text-muted-foreground text-sm mb-4">
+            Sign in to join this pool. Minimum deposit: {formatNGN(pool.minDeposit)}
+          </p>
+          <Link href="/login">
+            <Button>Sign In to Join</Button>
+          </Link>
+        </CardContent>
+      </Card>
     )
   }
 
